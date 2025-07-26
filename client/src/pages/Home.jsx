@@ -1,15 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import PropertyCard from "../components/PropertyCard";
 import ReviewCard from "../components/ReviewCard";
-import { Home as HomeIcon, Users, UserCheck, Handshake, Shield, UserCheck2, Lock, Search as SearchIcon, Headphones, TrendingUp } from "lucide-react";
+import { Search, Home as HomeIcon, Users, UserCheck, Handshake, Shield, UserCheck2, Lock, Search as SearchIcon, Headphones, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchLocation, setSearchLocation] = useState("");
+  const [propertyType, setPropertyType] = useState("any");
+  const [priceRange, setPriceRange] = useState("any");
+
+  // Fetch advertised properties
+  const { data: advertisedProperties = [] } = useQuery({
+    queryKey: ['/api/properties/advertisements'],
+  });
 
   // Fetch latest reviews
   const { data: latestReviews = [] } = useQuery({
@@ -108,7 +119,35 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Advertisement Section */}
+      <section className="py-16 bg-neutral-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="font-inter font-bold text-3xl md:text-4xl text-neutral-900 mb-4">
+              Advertised Properties
+            </h2>
+            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
+              Check out these exclusive properties, specially featured for you.
+            </p>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {advertisedProperties.slice(0, 4).map((property) => (
+              <PropertyCard key={property._id || property.id} property={property} />
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Button 
+              onClick={handleBrowseProperties}
+              className="bg-primary text-white px-8 py-3 hover:bg-blue-700"
+            >
+              View All Properties
+              <SearchIcon className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
 
       {/* Latest Reviews */}
       <section className="py-16 bg-white">
