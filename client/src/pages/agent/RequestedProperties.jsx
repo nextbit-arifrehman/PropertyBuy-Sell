@@ -149,7 +149,12 @@ export default function RequestedProperties() {
   // Calculate statistics
   const pendingOffers = offers.filter(offer => offer.status === "pending");
   const acceptedOffers = offers.filter(offer => offer.status === "accepted");
+  const rejectedOffers = offers.filter(offer => offer.status === "rejected");
+  const soldOffers = offers.filter(offer => offer.status === "bought");
+  
   const totalOffersValue = offers.reduce((sum, offer) => sum + offer.offeredAmount, 0);
+  const acceptedOffersValue = acceptedOffers.reduce((sum, offer) => sum + offer.offeredAmount, 0);
+  const pendingOffersValue = pendingOffers.reduce((sum, offer) => sum + offer.offeredAmount, 0);
 
   if (error) {
     return (
@@ -178,7 +183,7 @@ export default function RequestedProperties() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
@@ -189,7 +194,7 @@ export default function RequestedProperties() {
                   <div className="text-2xl font-bold text-neutral-900">
                     {isLoading ? <Skeleton className="h-8 w-16" /> : offers.length}
                   </div>
-                  <div className="text-neutral-600">Total Offers</div>
+                  <div className="text-sm text-neutral-600">Total Offers</div>
                 </div>
               </div>
             </CardContent>
@@ -205,7 +210,29 @@ export default function RequestedProperties() {
                   <div className="text-2xl font-bold text-neutral-900">
                     {isLoading ? <Skeleton className="h-8 w-16" /> : pendingOffers.length}
                   </div>
-                  <div className="text-neutral-600">Pending Review</div>
+                  <div className="text-sm text-neutral-600">Pending Review</div>
+                  <div className="text-xs text-yellow-600 font-medium">
+                    {isLoading ? <Skeleton className="h-3 w-16" /> : formatCurrency(pendingOffersValue)}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-800">
+                    {isLoading ? <Skeleton className="h-8 w-16" /> : acceptedOffers.length}
+                  </div>
+                  <div className="text-sm text-green-700">Accepted Offers</div>
+                  <div className="text-xs text-green-600 font-bold">
+                    {isLoading ? <Skeleton className="h-3 w-16" /> : formatCurrency(acceptedOffersValue)}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -214,14 +241,14 @@ export default function RequestedProperties() {
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center">
-                <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center mr-4">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center mr-4">
+                  <CheckCircle className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-neutral-900">
-                    {isLoading ? <Skeleton className="h-8 w-16" /> : acceptedOffers.length}
+                    {isLoading ? <Skeleton className="h-8 w-16" /> : soldOffers.length}
                   </div>
-                  <div className="text-neutral-600">Accepted</div>
+                  <div className="text-sm text-neutral-600">Completed Sales</div>
                 </div>
               </div>
             </CardContent>
@@ -234,10 +261,10 @@ export default function RequestedProperties() {
                   <DollarSign className="w-6 h-6 text-purple-600" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-neutral-900">
-                    {isLoading ? <Skeleton className="h-8 w-24" /> : formatCurrency(totalOffersValue)}
+                  <div className="text-xl font-bold text-neutral-900">
+                    {isLoading ? <Skeleton className="h-6 w-20" /> : formatCurrency(totalOffersValue)}
                   </div>
-                  <div className="text-neutral-600">Total Value</div>
+                  <div className="text-sm text-neutral-600">Total Portfolio Value</div>
                 </div>
               </div>
             </CardContent>
