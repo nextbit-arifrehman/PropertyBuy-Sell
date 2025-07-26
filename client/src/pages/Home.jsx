@@ -1,35 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import PropertyCard from "../components/PropertyCard";
+
 import ReviewCard from "../components/ReviewCard";
-import { Search, Home as HomeIcon, Users, UserCheck, Handshake, Shield, UserCheck2, Lock, Search as SearchIcon, Headphones, TrendingUp } from "lucide-react";
+import { Home as HomeIcon, Users, UserCheck, Handshake, Shield, UserCheck2, Lock, Search as SearchIcon, Headphones, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function Home() {
   const navigate = useNavigate();
-  const [searchLocation, setSearchLocation] = useState("");
-  const [propertyType, setPropertyType] = useState("any");
-  const [priceRange, setPriceRange] = useState("any");
-
-  // Fetch advertised properties
-  const { data: advertisedProperties = [] } = useQuery({
-    queryKey: ['/api/properties/advertisements'],
-  });
+  const { user } = useAuth();
 
   // Fetch latest reviews
   const { data: latestReviews = [] } = useQuery({
     queryKey: ['/api/reviews/latest'],
   });
 
-  const handleSearch = () => {
-    if (searchLocation.trim()) {
-      navigate(`/properties?location=${encodeURIComponent(searchLocation)}`);
+  const handleBrowseProperties = () => {
+    if (user) {
+      navigate('/all-properties');
     } else {
-      navigate('/properties');
+      navigate('/login');
     }
   };
 
@@ -58,12 +49,13 @@ export default function Home() {
                 Discover thousands of verified properties from trusted agents. Your next home is just a search away.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/all-properties">
-                  <Button className="bg-primary text-white px-8 py-4 hover:bg-blue-700 text-lg font-semibold">
-                    <SearchIcon className="w-5 h-5 mr-2" />
-                    Browse Properties
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={handleBrowseProperties}
+                  className="bg-primary text-white px-8 py-4 hover:bg-blue-700 text-lg font-semibold"
+                >
+                  <SearchIcon className="w-5 h-5 mr-2" />
+                  Browse Properties
+                </Button>
                 <Link to="/register">
                   <Button variant="outline" className="bg-white/10 border-white text-white px-8 py-4 hover:bg-white/20 text-lg font-semibold">
                     Get Started
@@ -75,77 +67,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Enhanced Search Section */}
-      <section className="bg-white shadow-lg border-b border-neutral-200 py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Card className="p-6 shadow-md border-neutral-200">
-            <div className="text-center mb-6">
-              <h2 className="font-inter font-bold text-2xl text-neutral-900 mb-2">
-                Advanced Property Search
-              </h2>
-              <p className="text-neutral-600">
-                Use our smart filters to find your perfect property
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Location</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
-                  <Input 
-                    type="text" 
-                    placeholder="Enter city, neighborhood, or ZIP"
-                    className="pl-10 h-12"
-                    value={searchLocation}
-                    onChange={(e) => setSearchLocation(e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Property Type</label>
-                <Select value={propertyType} onValueChange={setPropertyType}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Any Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Any Type</SelectItem>
-                    <SelectItem value="house">House</SelectItem>
-                    <SelectItem value="apartment">Apartment</SelectItem>
-                    <SelectItem value="condo">Condo</SelectItem>
-                    <SelectItem value="townhouse">Townhouse</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Price Range</label>
-                <Select value={priceRange} onValueChange={setPriceRange}>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Any Price" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="any">Any Price</SelectItem>
-                    <SelectItem value="0-500000">$0 - $500K</SelectItem>
-                    <SelectItem value="500000-1000000">$500K - $1M</SelectItem>
-                    <SelectItem value="1000000-2000000">$1M - $2M</SelectItem>
-                    <SelectItem value="2000000+">$2M+</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <Button 
-              className="w-full mt-6 bg-primary text-white py-4 px-6 hover:bg-blue-700 text-lg font-semibold"
-              onClick={handleSearch}
-            >
-              <SearchIcon className="w-5 h-5 mr-2" />
-              Search Properties
-            </Button>
-          </Card>
-        </div>
-      </section>
+
 
       {/* Stats Section */}
       <section className="py-16 bg-white">
@@ -186,34 +108,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Advertisement Section */}
-      <section className="py-16 bg-neutral-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-inter font-bold text-3xl md:text-4xl text-neutral-900 mb-4">
-              Advertised Properties
-            </h2>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-              Check out these exclusive properties, specially featured for you.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {advertisedProperties.slice(0, 4).map((property) => (
-              <PropertyCard key={property._id || property.id} property={property} />
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Link to="/properties">
-              <Button className="bg-primary text-white px-8 py-3 hover:bg-blue-700">
-                View All Properties
-                <SearchIcon className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* Latest Reviews */}
       <section className="py-16 bg-white">
