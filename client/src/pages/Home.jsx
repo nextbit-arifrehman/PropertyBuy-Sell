@@ -157,13 +157,25 @@ export default function Home() {
               What Our Clients Say
             </h2>
             <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-              Real experiences from satisfied homeowners and investors
+              Latest user reviews from our satisfied clients sharing their experiences with properties
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {latestReviews.map((review) => (
-              <ReviewCard key={review._id || review.id} review={review} />
+            {latestReviews.slice(0, 3).map((review) => (
+              <ReviewCard 
+                key={review._id || review.id} 
+                review={{
+                  ...review,
+                  userName: review.reviewerName,
+                  userImage: review.reviewerImage,
+                  propertyTitle: review.propertyTitle,
+                  description: review.reviewText,
+                  createdAt: review.createdAt,
+                  agentName: review.propertyAgentName,
+                  rating: 5 // Since reviews don't have ratings, we'll show 5 stars for all
+                }} 
+              />
             ))}
           </div>
         </div>
