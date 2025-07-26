@@ -80,45 +80,6 @@ export default function Home() {
 
 
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <HomeIcon className="text-primary text-2xl w-8 h-8" />
-              </div>
-              <div className="text-3xl font-bold text-neutral-900">50,000+</div>
-              <div className="text-neutral-600">Properties Listed</div>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="text-secondary text-2xl w-8 h-8" />
-              </div>
-              <div className="text-3xl font-bold text-neutral-900">25,000+</div>
-              <div className="text-neutral-600">Happy Clients</div>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserCheck className="text-accent text-2xl w-8 h-8" />
-              </div>
-              <div className="text-3xl font-bold text-neutral-900">2,500+</div>
-              <div className="text-neutral-600">Verified Agents</div>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Handshake className="text-red-500 text-2xl w-8 h-8" />
-              </div>
-              <div className="text-3xl font-bold text-neutral-900">15,000+</div>
-              <div className="text-neutral-600">Successful Sales</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Advertisement Section */}
       <section className="py-16 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -140,11 +101,50 @@ export default function Home() {
           <div className="text-center mt-12">
             <Button 
               onClick={handleBrowseProperties}
-              className="bg-primary text-white px-8 py-3 hover:bg-blue-700"
+              className="bg-blue-600 text-white px-8 py-3 hover:bg-blue-700 font-semibold"
             >
               View All Properties
               <SearchIcon className="w-5 h-5 ml-2" />
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <HomeIcon className="text-blue-600 text-2xl w-8 h-8" />
+              </div>
+              <div className="text-3xl font-bold text-neutral-900">50,000+</div>
+              <div className="text-neutral-600">Properties Listed</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="text-green-600 text-2xl w-8 h-8" />
+              </div>
+              <div className="text-3xl font-bold text-neutral-900">25,000+</div>
+              <div className="text-neutral-600">Happy Clients</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <UserCheck className="text-purple-600 text-2xl w-8 h-8" />
+              </div>
+              <div className="text-3xl font-bold text-neutral-900">2,500+</div>
+              <div className="text-neutral-600">Verified Agents</div>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Handshake className="text-red-500 text-2xl w-8 h-8" />
+              </div>
+              <div className="text-3xl font-bold text-neutral-900">15,000+</div>
+              <div className="text-neutral-600">Successful Sales</div>
+            </div>
           </div>
         </div>
       </section>

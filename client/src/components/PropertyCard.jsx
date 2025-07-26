@@ -90,11 +90,11 @@ export default function PropertyCard({ property, onAddToWishlist, showWishlistBu
             <Button
               size="icon"
               variant="secondary"
-              className="w-8 h-8 bg-white/90 hover:bg-white hover:text-red-500 transition-colors"
+              className="w-10 h-10 bg-white/95 shadow-lg hover:bg-white hover:text-red-500 transition-all duration-200 border border-gray-200 hover:border-red-300"
               onClick={handleWishlist}
               disabled={isWishlisted}
             >
-              <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-red-500 text-red-500' : ''}`} />
+              <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600 hover:text-red-500'}`} />
             </Button>
           </div>
         )}

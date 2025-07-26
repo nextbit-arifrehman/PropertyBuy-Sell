@@ -53,11 +53,11 @@ export default function Navbar() {
       <Link to="/all-properties">
         <Button 
           variant="ghost" 
-          className={`${mobile ? 'w-full justify-start' : ''} text-neutral-700 hover:text-primary`}
+          className={`${mobile ? 'w-full justify-start' : ''} text-white bg-blue-600 hover:bg-blue-700 hover:text-white font-semibold px-4 py-2`}
           onClick={onClose}
         >
           <Building className="w-4 h-4 mr-2" />
-          All Properties
+          Find Properties
         </Button>
       </Link>
       
