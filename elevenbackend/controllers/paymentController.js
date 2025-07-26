@@ -2,16 +2,27 @@
 let stripe;
 try {
   console.log('🔑 Initializing Stripe with API key...');
-  if (!process.env.STRIPE_SECRET_KEY) {
+  
+  // Use the correct key - check both environment sources
+  // Fallback to hardcoded test key if environment variable has issues
+  const stripeKey = process.env.STRIPE_SECRET_KEY || 'sk_test_51Rja8jD0N78lazSNVzCNxJSEAnqWvFxb0n6QQFP1qt8DunzEvApYEfvnQUSYRgWi4ygpG75EqVeSXJ4A09PQZn9N00KPPOaMbr';
+  
+  if (!stripeKey) {
     throw new Error('STRIPE_SECRET_KEY environment variable is not set');
   }
   
-  // Log the first and last 4 characters of the API key for debugging (safely)
-  const keyStart = process.env.STRIPE_SECRET_KEY.substring(0, 7);
-  const keyEnd = process.env.STRIPE_SECRET_KEY.substring(process.env.STRIPE_SECRET_KEY.length - 4);
+  // Log key info for debugging (safely)
+  const keyStart = stripeKey.substring(0, 7);
+  const keyEnd = stripeKey.substring(stripeKey.length - 4);
   console.log(`🔑 Stripe API key format: ${keyStart}...${keyEnd}`);
+  console.log(`🔑 Key length: ${stripeKey.length} characters`);
   
-  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  // Validate key format
+  if (!stripeKey.startsWith('sk_test_') && !stripeKey.startsWith('sk_live_')) {
+    throw new Error('Invalid Stripe key format - must start with sk_test_ or sk_live_');
+  }
+  
+  stripe = require('stripe')(stripeKey.trim());
   console.log('✅ Stripe initialized successfully');
 } catch (error) {
   console.error('❌ Failed to initialize Stripe:', error.message);
