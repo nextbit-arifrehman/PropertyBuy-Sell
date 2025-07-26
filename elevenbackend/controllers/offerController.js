@@ -89,7 +89,7 @@ exports.getMyOffers = async (req, res) => {
   }
 };
 
-// Agent: get all offers made for agent's properties (requested/offered properties) - excluding sold properties
+// Agent: get all offers made for agent's properties (requested/offered properties) - show ALL offer history with pending first
 exports.getRequestedOffers = async (req, res) => {
   try {
     const agentUid = req.user.uid;
@@ -97,22 +97,14 @@ exports.getRequestedOffers = async (req, res) => {
     
     console.log(`🔍 Getting requested offers for agent: ${agentEmail} (UID: ${agentUid})`);
     
-    // Get offers by agent UID (for newer offers) and agent email (for compatibility)
-    // Exclude offers for properties that are already sold
+    // Get ALL offers by agent UID (for newer offers) and agent email (for compatibility)
+    // Show all statuses: pending, accepted, rejected, bought (complete history)
     const offersByUid = await req.db.collection('offers').find({ 
-      agentUid: agentUid,
-      $and: [
-        { $or: [{ status: 'pending' }, { status: 'accepted' }, { status: 'rejected' }] },
-        { status: { $ne: 'bought' } } // Don't show bought offers in requested properties
-      ]
+      agentUid: agentUid
     }).toArray();
     
     const offersByEmail = await req.db.collection('offers').find({ 
-      agentEmail: agentEmail,
-      $and: [
-        { $or: [{ status: 'pending' }, { status: 'accepted' }, { status: 'rejected' }] },
-        { status: { $ne: 'bought' } } // Don't show bought offers in requested properties
-      ]
+      agentEmail: agentEmail
     }).toArray();
     
     // Combine and deduplicate offers
@@ -121,19 +113,18 @@ exports.getRequestedOffers = async (req, res) => {
       index === self.findIndex(o => o._id.toString() === offer._id.toString())
     );
 
-    // Further filter by checking if the associated property is not sold
-    const Property = require('../models/Property');
-    const activeOffers = await Promise.all(
-      uniqueOffers.map(async (offer) => {
-        const property = await Property.getPropertyById(req.db, offer.propertyId);
-        return property && property.status !== 'sold' ? offer : null;
-      })
-    );
-
-    const filteredOffers = activeOffers.filter(offer => offer !== null);
+    // Sort offers: pending first, then by creation date (newest first)
+    const sortedOffers = uniqueOffers.sort((a, b) => {
+      // Pending offers come first
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (b.status === 'pending' && a.status !== 'pending') return 1;
+      
+      // Then sort by creation date (newest first)
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
     
-    console.log(`✅ Found ${filteredOffers.length} active offers for unsold properties for agent: ${agentEmail}`);
-    res.json(filteredOffers);
+    console.log(`✅ Found ${sortedOffers.length} total offers (all history) for agent: ${agentEmail}`);
+    res.json(sortedOffers);
   } catch (error) {
     console.error('Get requested offers error:', error);
     res.status(500).json({ error: 'Server error' });

@@ -179,8 +179,19 @@ export default function MyProperties() {
     });
   };
 
-  const getStatusBadge = (status) => {
-    switch (status) {
+  const getStatusBadge = (property) => {
+    // If property is sold, show sold status regardless of verification status
+    if (property.status === 'sold') {
+      return (
+        <Badge className="bg-green-600 text-white">
+          <DollarSign className="w-3 h-3 mr-1" />
+          SOLD
+        </Badge>
+      );
+    }
+    
+    // Otherwise show verification status
+    switch (property.verificationStatus) {
       case "verified":
         return (
           <Badge className="bg-secondary text-white">
@@ -294,7 +305,7 @@ export default function MyProperties() {
                   />
                   
                   <div className="absolute top-4 left-4">
-                    {getStatusBadge(property.verificationStatus)}
+                    {getStatusBadge(property)}
                   </div>
                 </div>
                 
@@ -329,7 +340,7 @@ export default function MyProperties() {
                   </div>
                   
                   <div className="mt-4 flex gap-2">
-                    {property.verificationStatus !== "rejected" && (
+                    {property.verificationStatus !== "rejected" && property.status !== "sold" && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -341,15 +352,23 @@ export default function MyProperties() {
                       </Button>
                     )}
                     
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(property.id)}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
-                      disabled={deletePropertyMutation.isPending}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                    {property.status === "sold" && (
+                      <div className="flex-1 text-center py-2 text-sm text-green-600 font-medium">
+                        Property has been sold
+                      </div>
+                    )}
+                    
+                    {property.status !== "sold" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDelete(property.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        disabled={deletePropertyMutation.isPending}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

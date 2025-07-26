@@ -418,8 +418,18 @@ exports.sortPropertiesByPrice = async (req, res) => {
 exports.getMyProperties = async (req, res) => {
   try {
     const agentUid = req.user.uid;
+    
+    console.log(`🔍 Getting all properties (including sold) for agent: ${req.user.email} (UID: ${agentUid})`);
+    
+    // Get ALL properties by this agent including sold ones
     const properties = await Property.getAllProperties(req.db, { agentUid });
-    res.json(properties);
+    
+    console.log(`✅ Found ${properties.length} total properties for agent: ${req.user.email}`);
+    
+    res.json({ 
+      properties: properties,
+      total: properties.length 
+    });
   } catch (error) {
     console.error('Get my properties error:', error);
     res.status(500).json({ 

@@ -207,7 +207,7 @@ export default function SoldProperties() {
                   </TableHeader>
                   <TableBody>
                     {soldProperties.map((property) => (
-                      <TableRow key={property.id}>
+                      <TableRow key={property._id?.toString() || property.id || `sold-${property.propertyId}-${property.buyerEmail}`}>
                         <TableCell className="font-medium">{property.propertyTitle}</TableCell>
                         <TableCell>{property.propertyLocation}</TableCell>
                         <TableCell>{property.buyerName}</TableCell>
