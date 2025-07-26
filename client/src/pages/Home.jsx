@@ -37,7 +37,7 @@ export default function Home() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative">
-        <div className="h-[600px] bg-gradient-to-r from-neutral-900/70 to-neutral-800/50 relative">
+        <div className="h-[500px] bg-gradient-to-r from-neutral-900/70 to-neutral-800/50 relative">
           <div 
             style={{
               backgroundImage: "url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&h=1080')",
@@ -49,7 +49,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/80 to-neutral-800/60" />
           
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <div className="max-w-2xl">
+            <div className="max-w-3xl text-center mx-auto">
               <h1 className="font-inter font-bold text-4xl md:text-6xl text-white mb-6 leading-tight">
                 Find Your Perfect 
                 <span className="text-accent"> Dream Home</span>
@@ -57,67 +57,93 @@ export default function Home() {
               <p className="text-xl text-neutral-200 mb-8 leading-relaxed">
                 Discover thousands of verified properties from trusted agents. Your next home is just a search away.
               </p>
-
-              {/* Search Form */}
-              <Card className="p-6 shadow-2xl">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Location</label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
-                      <Input 
-                        type="text" 
-                        placeholder="Enter city, neighborhood, or ZIP"
-                        className="pl-10"
-                        value={searchLocation}
-                        onChange={(e) => setSearchLocation(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Property Type</label>
-                    <Select value={propertyType} onValueChange={setPropertyType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Any Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any Type</SelectItem>
-                        <SelectItem value="house">House</SelectItem>
-                        <SelectItem value="apartment">Apartment</SelectItem>
-                        <SelectItem value="condo">Condo</SelectItem>
-                        <SelectItem value="townhouse">Townhouse</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">Price Range</label>
-                    <Select value={priceRange} onValueChange={setPriceRange}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Any Price" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="any">Any Price</SelectItem>
-                        <SelectItem value="0-500000">$0 - $500K</SelectItem>
-                        <SelectItem value="500000-1000000">$500K - $1M</SelectItem>
-                        <SelectItem value="1000000-2000000">$1M - $2M</SelectItem>
-                        <SelectItem value="2000000+">$2M+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full mt-4 bg-primary text-white py-3 px-6 hover:bg-blue-700 text-lg"
-                  onClick={handleSearch}
-                >
-                  <SearchIcon className="w-5 h-5 mr-2" />
-                  Search Properties
-                </Button>
-              </Card>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/all-properties">
+                  <Button className="bg-primary text-white px-8 py-4 hover:bg-blue-700 text-lg font-semibold">
+                    <SearchIcon className="w-5 h-5 mr-2" />
+                    Browse Properties
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button variant="outline" className="bg-white/10 border-white text-white px-8 py-4 hover:bg-white/20 text-lg font-semibold">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Enhanced Search Section */}
+      <section className="bg-white shadow-lg border-b border-neutral-200 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <Card className="p-6 shadow-md border-neutral-200">
+            <div className="text-center mb-6">
+              <h2 className="font-inter font-bold text-2xl text-neutral-900 mb-2">
+                Advanced Property Search
+              </h2>
+              <p className="text-neutral-600">
+                Use our smart filters to find your perfect property
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Location</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
+                  <Input 
+                    type="text" 
+                    placeholder="Enter city, neighborhood, or ZIP"
+                    className="pl-10 h-12"
+                    value={searchLocation}
+                    onChange={(e) => setSearchLocation(e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Property Type</label>
+                <Select value={propertyType} onValueChange={setPropertyType}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Any Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Type</SelectItem>
+                    <SelectItem value="house">House</SelectItem>
+                    <SelectItem value="apartment">Apartment</SelectItem>
+                    <SelectItem value="condo">Condo</SelectItem>
+                    <SelectItem value="townhouse">Townhouse</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Price Range</label>
+                <Select value={priceRange} onValueChange={setPriceRange}>
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Any Price" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Price</SelectItem>
+                    <SelectItem value="0-500000">$0 - $500K</SelectItem>
+                    <SelectItem value="500000-1000000">$500K - $1M</SelectItem>
+                    <SelectItem value="1000000-2000000">$1M - $2M</SelectItem>
+                    <SelectItem value="2000000+">$2M+</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <Button 
+              className="w-full mt-6 bg-primary text-white py-4 px-6 hover:bg-blue-700 text-lg font-semibold"
+              onClick={handleSearch}
+            >
+              <SearchIcon className="w-5 h-5 mr-2" />
+              Search Properties
+            </Button>
+          </Card>
         </div>
       </section>
 

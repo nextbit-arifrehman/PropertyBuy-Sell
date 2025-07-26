@@ -81,33 +81,33 @@ export default function Navbar() {
   return (
     <header className="bg-white shadow-sm border-b border-neutral-200 sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+        <div className="flex justify-between items-center h-20">
           {/* Logo Section */}
           <Link to="/">
-            <div className="flex items-center space-x-2 cursor-pointer">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+            <div className="flex items-center space-x-3 cursor-pointer group">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary to-blue-700 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105">
                 <Home className="text-white text-xl" />
               </div>
               <div>
-                <h1 className="font-inter font-bold text-xl text-neutral-900">RealEstate Pro</h1>
-                <p className="text-xs text-neutral-500">Your Dream Property</p>
+                <h1 className="font-inter font-bold text-2xl text-neutral-900 group-hover:text-primary transition-colors">RealEstate Pro</h1>
+                <p className="text-sm text-neutral-500 font-medium">Your Dream Property</p>
               </div>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden lg:flex items-center space-x-8">
             <NavLinks />
             
             {/* User Authentication */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                      <Avatar className="h-10 w-10">
                         <AvatarImage src={user.photoURL} alt={user.displayName} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-primary text-white font-semibold">
                           {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -132,24 +132,24 @@ export default function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <>
+                <div className="flex items-center space-x-3">
                   <Link to="/login">
-                    <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-                      Login
+                    <Button variant="ghost" className="text-neutral-700 hover:text-primary hover:bg-primary/5 px-6 py-2">
+                      Sign In
                     </Button>
                   </Link>
                   <Link to="/register">
-                    <Button className="bg-primary hover:bg-blue-700">
-                      Sign Up
+                    <Button className="bg-gradient-to-r from-primary to-blue-700 text-white hover:from-primary/90 hover:to-blue-700/90 px-6 py-2 shadow-md">
+                      Get Started
                     </Button>
                   </Link>
-                </>
+                </div>
               )}
             </div>
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden">
+          <div className="lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
