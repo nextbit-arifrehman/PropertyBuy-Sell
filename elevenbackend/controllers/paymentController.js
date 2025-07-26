@@ -1,39 +1,108 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+// Initialize Stripe with detailed error checking
+let stripe;
+try {
+  console.log('🔑 Initializing Stripe with API key...');
+  if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+  }
+  
+  // Log the first and last 4 characters of the API key for debugging (safely)
+  const keyStart = process.env.STRIPE_SECRET_KEY.substring(0, 7);
+  const keyEnd = process.env.STRIPE_SECRET_KEY.substring(process.env.STRIPE_SECRET_KEY.length - 4);
+  console.log(`🔑 Stripe API key format: ${keyStart}...${keyEnd}`);
+  
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  console.log('✅ Stripe initialized successfully');
+} catch (error) {
+  console.error('❌ Failed to initialize Stripe:', error.message);
+  stripe = null;
+}
+
 const Offer = require('../models/Offer');
 
 exports.createPaymentIntent = async (req, res) => {
+  console.log('📋 STEP 1: Starting payment intent creation process');
+  
   try {
-    const { amount, offerId } = req.body; // amount in dollars
+    // Check if Stripe is properly initialized
+    if (!stripe) {
+      console.error('❌ STEP 1 FAILED: Stripe not initialized');
+      return res.status(500).json({ 
+        error: 'Payment system not properly configured. Please contact support.',
+        step: 'stripe_initialization'
+      });
+    }
+    console.log('✅ STEP 1 PASSED: Stripe is initialized');
 
-    console.log(`💳 Creating payment intent for offer ${offerId}, amount: $${amount}`);
+    const { amount, offerId } = req.body;
+    console.log(`📋 STEP 2: Validating request data - amount: $${amount}, offerId: ${offerId}`);
 
     if (!amount || amount <= 0) {
-      return res.status(400).json({ error: 'Amount is required and must be a positive number' });
+      console.error('❌ STEP 2 FAILED: Invalid amount');
+      return res.status(400).json({ 
+        error: 'Amount is required and must be a positive number',
+        step: 'amount_validation'
+      });
     }
 
     if (!offerId) {
-      return res.status(400).json({ error: 'Offer ID is required' });
+      console.error('❌ STEP 2 FAILED: Missing offer ID');
+      return res.status(400).json({ 
+        error: 'Offer ID is required',
+        step: 'offer_id_validation'
+      });
     }
+    console.log('✅ STEP 2 PASSED: Request data is valid');
 
-    // Verify offer exists and is accepted using our MongoDB model
+    console.log('📋 STEP 3: Fetching offer from database');
     const offer = await Offer.getOfferById(req.db, offerId);
     if (!offer) {
-      return res.status(404).json({ error: 'Offer not found' });
+      console.error('❌ STEP 3 FAILED: Offer not found in database');
+      return res.status(404).json({ 
+        error: 'Offer not found',
+        step: 'offer_lookup'
+      });
     }
+    console.log(`✅ STEP 3 PASSED: Found offer - ${offer.propertyTitle}, status: ${offer.status}`);
 
-    console.log(`🔍 Found offer: ${offer.propertyTitle}, status: ${offer.status}, buyer: ${offer.buyerEmail}`);
-
+    console.log('📋 STEP 4: Validating offer status and permissions');
     if (offer.status !== 'accepted') {
-      return res.status(400).json({ error: 'Only accepted offers can be paid for' });
+      console.error(`❌ STEP 4 FAILED: Offer status is '${offer.status}', not 'accepted'`);
+      return res.status(400).json({ 
+        error: 'Only accepted offers can be paid for',
+        step: 'offer_status_validation',
+        currentStatus: offer.status
+      });
     }
 
     if (offer.buyerEmail !== req.user.email) {
-      return res.status(403).json({ error: 'Unauthorized to pay for this offer' });
+      console.error(`❌ STEP 4 FAILED: User ${req.user.email} not authorized for offer by ${offer.buyerEmail}`);
+      return res.status(403).json({ 
+        error: 'Unauthorized to pay for this offer',
+        step: 'user_authorization'
+      });
+    }
+    console.log('✅ STEP 4 PASSED: Offer status and user authorization valid');
+
+    console.log('📋 STEP 5: Converting amount to cents and creating Stripe payment intent');
+    const amountInCents = Math.round(amount * 100);
+    console.log(`💰 Amount conversion: $${amount} = ${amountInCents} cents`);
+
+    // Test Stripe connection first
+    try {
+      console.log('🔌 Testing Stripe API connection...');
+      await stripe.paymentMethods.list({ limit: 1 });
+      console.log('✅ Stripe API connection test successful');
+    } catch (stripeTestError) {
+      console.error('❌ STEP 5 FAILED: Stripe API connection test failed:', stripeTestError.message);
+      return res.status(500).json({
+        error: 'Payment service connection failed. Please check API credentials.',
+        step: 'stripe_connection_test',
+        details: stripeTestError.message
+      });
     }
 
-    // Convert amount to cents (Stripe expects amounts in cents)
-    const amountInCents = Math.round(amount * 100);
-
+    console.log('🎯 Creating Stripe payment intent...');
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountInCents,
       currency: 'usd',
@@ -48,13 +117,45 @@ exports.createPaymentIntent = async (req, res) => {
       },
     });
 
+    console.log(`✅ STEP 5 PASSED: Payment intent created successfully - ID: ${paymentIntent.id}`);
+    console.log('🎉 ALL STEPS PASSED: Payment intent creation completed successfully');
+
     res.status(200).json({
       clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id
+      paymentIntentId: paymentIntent.id,
+      success: true,
+      step: 'completed'
     });
   } catch (error) {
-    console.error('Error creating payment intent:', error);
-    res.status(500).json({ error: error.message });
+    console.error('❌ PAYMENT INTENT CREATION FAILED:', error);
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode
+    });
+    
+    // Provide specific error messages based on error type
+    let errorMessage = 'Payment processing failed. Please try again.';
+    let errorStep = 'unknown_error';
+    
+    if (error.type === 'StripeAuthenticationError') {
+      errorMessage = 'Payment service authentication failed. Please contact support.';
+      errorStep = 'stripe_authentication';
+    } else if (error.type === 'StripeConnectionError') {
+      errorMessage = 'Unable to connect to payment service. Please try again later.';
+      errorStep = 'stripe_connection';
+    } else if (error.type === 'StripeAPIError') {
+      errorMessage = 'Payment service error. Please try again.';
+      errorStep = 'stripe_api_error';
+    }
+    
+    res.status(500).json({ 
+      error: errorMessage,
+      step: errorStep,
+      technical_details: error.message
+    });
   }
 };
 

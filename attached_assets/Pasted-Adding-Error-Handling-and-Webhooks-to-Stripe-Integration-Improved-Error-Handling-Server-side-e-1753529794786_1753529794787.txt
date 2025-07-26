@@ -1,0 +1,417 @@
+Adding Error Handling and Webhooks to Stripe Integration
+
+Improved Error Handling
+
+Server-side error handling
+
+
+example.js 
+// Update your server.js with better error handling
+const stripe = require('stripe')('sk_test_your_secret_key');
+const express = require('express');
+const app = express();
+app.use(express.static('public'));
+app.use(express.json());
+
+// Create a checkout session with error handling
+app.post('/create-checkout-session', async (req, res) => {
+  try {
+    const session = await stripe.checkout.sessions.create({
+      ui_mode: 'custom',
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: 'Your Product',
+            },
+            unit_amount: 2000, // $20.00
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      return_url: `${req.headers.origin}/complete?session_id={CHECKOUT_SESSION_ID}`,
+    });
+
+    res.send({ clientSecret: session.client_secret });
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    res.status(500).send({
+      error: {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+      }
+    });
+  }
+});
+
+// Handle session status with error handling
+app.get('/session-status', async (req, res) => {
+  try {
+    if (!req.query.session_id) {
+      return res.status(400).send({ error: { message: 'Missing session_id parameter' } });
+    }
+    
+    const session = await stripe.checkout.sessions.retrieve(
+      req.query.session_id, 
+      {expand: ["payment_intent"]}
+    );
+
+    res.send({
+      status: session.status,
+      payment_status: session.payment_status,
+      payment_intent_id: session.payment_intent?.id,
+      payment_intent_status: session.payment_intent?.status
+    });
+  } catch (error) {
+    console.error('Error retrieving session:', error);
+    res.status(500).send({
+      error: {
+        message: error.message,
+        type: error.type,
+        code: error.code,
+      }
+    });
+  }
+});
+
+app.listen(4242, () => console.log('Running on port 4242'));
+Client-side error handling
+
+
+example.js 
+// Enhanced checkout.js with better error handling
+const stripe = Stripe("pk_test_your_publishable_key");
+
+let checkout;
+initialize();
+
+const emailInput = document.getElementById("email");
+const emailErrors = document.getElementById("email-errors");
+
+document
+  .querySelector("#payment-form")
+  .addEventListener("submit", handleSubmit);
+
+// Initialize Stripe checkout with error handling
+async function initialize() {
+  try {
+    const promise = fetch("/create-checkout-session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    })
+      .then((r) => {
+        if (!r.ok) {
+          return r.json().then(json => Promise.reject(json));
+        }
+        return r.json();
+      })
+      .then((r) => r.clientSecret);
+
+    checkout = await stripe.initCheckout({
+      fetchClientSecret: () => promise,
+    });
+
+    checkout.on('change', (session) => {
+      try {
+        document.querySelector("#button-text").textContent = `Pay ${
+          checkout.session().total.total.amount
+        } now`;
+      } catch (error) {
+        console.error("Error updating button text:", error);
+        showMessage("Could not update payment amount. Please refresh the page.");
+      }
+    });
+
+    const paymentElement = checkout.createPaymentElement();
+    paymentElement.mount("#payment-element");
+  } catch (error) {
+    console.error("Initialization error:", error);
+    showMessage(`Could not initialize payment: ${error.message || "Unknown error"}`);
+  }
+}
+
+// Handle form submission with improved error handling
+async function handleSubmit(e) {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const email = document.getElementById("email").value;
+    
+    // Validate email format client-side first
+    if (!email || !email.includes('@')) {
+      emailInput.classList.add("error");
+      emailErrors.textContent = "Please enter a valid email address";
+      setLoading(false);
+      return;
+    }
+    
+    const updateResult = await checkout.updateEmail(email);
+    
+    if (updateResult.type === "error") {
+      emailInput.classList.add("error");
+      emailErrors.textContent = updateResult.error.message;
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await checkout.confirm();
+
+    if (error) {
+      console.error("Payment confirmation error:", error);
+      showMessage(error.message || "An unexpected error occurred");
+      setLoading(false);
+      return;
+    }
+    
+    // Payment succeeded - this point isn't reached in most cases
+    // as user is redirected to the return_url
+  } catch (error) {
+    console.error("Submission error:", error);
+    showMessage(`Payment failed: ${error.message || "Unknown error"}`);
+    setLoading(false);
+  }
+}
+
+// Enhanced UI helpers
+function showMessage(messageText) {
+  const messageContainer = document.querySelector("#payment-message");
+  messageContainer.classList.remove("hidden");
+  messageContainer.textContent = messageText;
+  setTimeout(() => {
+    messageContainer.classList.add("hidden");
+    messageContainer.textContent = "";
+  }, 6000);
+}
+
+function setLoading(isLoading) {
+  if (isLoading) {
+    document.querySelector("#submit").disabled = true;
+    document.querySelector("#spinner").classList.remove("hidden");
+    document.querySelector("#button-text").classList.add("hidden");
+  } else {
+    document.querySelector("#submit").disabled = false;
+    document.querySelector("#spinner").classList.add("hidden");
+    document.querySelector("#button-text").classList.remove("hidden");
+  }
+}
+Implementing Webhooks
+
+1. Configure your webhook endpoint
+
+Add this to your server.js:
+
+
+example.js 
+// Set your webhook secret
+const endpointSecret = 'whsec_your_webhook_signing_secret';
+
+app.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+  let event;
+  const sig = req.headers['stripe-signature'];
+
+  try {
+    // Verify the event came from Stripe
+    event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+  } catch (err) {
+    console.log(`⚠️  Webhook signature verification failed.`, err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      const paymentIntent = event.data.object;
+      console.log(`PaymentIntent ${paymentIntent.id} succeeded!`);
+      // Then define and call a function to handle the successful payment
+      // handleSuccessfulPayment(paymentIntent);
+      break;
+      
+    case 'payment_intent.payment_failed':
+      const failedPayment = event.data.object;
+      const failureMessage = failedPayment.last_payment_error?.message;
+      console.log(`❌ Payment failed: ${failedPayment.id}, ${failureMessage}`);
+      // handleFailedPayment(failedPayment);
+      break;
+      
+    case 'checkout.session.completed':
+      const session = event.data.object;
+      console.log(`Checkout session completed: ${session.id}`);
+      // handleCompletedCheckout(session);
+      break;
+      
+    case 'checkout.session.async_payment_succeeded':
+      const asyncSession = event.data.object;
+      console.log(`Async payment succeeded for session: ${asyncSession.id}`);
+      // handleAsyncPaymentSuccess(asyncSession);
+      break;
+      
+    case 'checkout.session.async_payment_failed':
+      const failedAsyncSession = event.data.object;
+      console.log(`Async payment failed for session: ${failedAsyncSession.id}`);
+      // handleAsyncPaymentFailure(failedAsyncSession);
+      break;
+      
+    default:
+      // Unexpected event type
+      console.log(`Unhandled event type ${event.type}.`);
+  }
+
+  // Return a 200 response to acknowledge receipt of the event
+  res.send();
+});
+2. Add these webhook handler functions
+
+
+example.js 
+// Functions to handle different webhook events
+function handleSuccessfulPayment(paymentIntent) {
+  // Example: update order status in database
+  const orderId = paymentIntent.metadata.order_id;
+  if (orderId) {
+    // Update order status to 'paid' in your database
+    console.log(`Updating order ${orderId} to paid status`);
+    
+    // Example: Send confirmation email to customer
+    const customerEmail = paymentIntent.receipt_email;
+    if (customerEmail) {
+      console.log(`Sending payment confirmation to ${customerEmail}`);
+      // sendConfirmationEmail(customerEmail, orderId);
+    }
+  }
+}
+
+function handleFailedPayment(paymentIntent) {
+  // Example: update order status in database
+  const orderId = paymentIntent.metadata.order_id;
+  if (orderId) {
+    // Update order status to 'payment_failed' in your database
+    console.log(`Updating order ${orderId} to payment_failed status`);
+    
+    // Example: Send failure notification to customer
+    const customerEmail = paymentIntent.receipt_email;
+    if (customerEmail) {
+      console.log(`Sending payment failure notification to ${customerEmail}`);
+      // sendPaymentFailureEmail(customerEmail, orderId);
+    }
+  }
+}
+
+function handleCompletedCheckout(session) {
+  // For Checkout sessions, handle fulfillment
+  if (session.payment_status === 'paid') {
+    const customerId = session.customer;
+    // Fulfill the purchase, e.g., activate service or ship product
+    console.log(`Fulfilling order for customer ${customerId}`);
+    
+    // Record the payment in your database
+    // createPurchaseRecord(session);
+  }
+}
+
+function handleAsyncPaymentSuccess(session) {
+  // Handle async payment methods (like bank transfers) that succeeded
+  console.log(`Processing successful async payment for session ${session.id}`);
+  // Complete order fulfillment
+  // fulfillOrder(session);
+}
+
+function handleAsyncPaymentFailure(session) {
+  // Handle async payment methods that failed
+  console.log(`Handling failed async payment for session ${session.id}`);
+  // Notify customer of payment failure
+  // notifyCustomerOfFailure(session);
+}
+3. Testing webhooks locally
+
+Install the Stripe CLI: https://stripe.com/docs/stripe-cli
+
+Login to your Stripe account:
+
+stripe login
+Run in Stripe Shell
+Forward events to your local server:
+stripe listen --forward-to localhost:4242/webhook
+Run in Stripe Shell
+Get your webhook signing secret from the CLI output and update the endpointSecret in your code.
+
+In another terminal, trigger test webhook events:
+
+stripe trigger payment_intent.succeeded
+Run in Stripe Shell
+4. Configure webhook URLs in production
+
+When you deploy your application:
+
+Go to the Stripe Dashboard > Developers > Webhooks
+Add an endpoint with your production URL (e.g., https://your-domain.com/webhook)
+Select the events you want to receive
+Get the signing secret and update your production environment variables
+Best Practices for Error Handling and Webhooks
+
+Idempotency: Process each webhook event exactly once
+
+
+example.js 
+// Example: Check if this event has already been processed
+const eventId = event.id;
+const isProcessed = await checkIfEventProcessed(eventId);
+if (isProcessed) {
+  return res.send();
+}
+
+// Process the event
+// ...
+
+// Mark event as processed
+await markEventAsProcessed(eventId);
+Retry mechanism: For network failures, implement exponential backoff
+
+
+example.js 
+// Example for client-side network failures
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  let retries = 0;
+  while (true) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      if (retries === maxRetries) throw err;
+      retries++;
+      const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+Logging: Log all webhook events and errors
+
+
+example.js 
+// Example: Enhanced logging
+const logWebhookEvent = (event, status = 'received') => {
+  console.log(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    event_id: event.id,
+    event_type: event.type,
+    status: status,
+    data: event.data.object.id
+  }));
+};
+Monitoring: Set up alerts for webhook failures
+
+
+example.js 
+// Example: Track webhook failures
+let webhookFailureCount = 0;
+
+const trackWebhookFailure = () => {
+  webhookFailureCount++;
+  if (webhookFailureCount > 5) {
+    // Send alert to admin
+    notifyAdminOfWebhookFailures();
+  }
+};
+By implementing these error handling strategies and webhook processors, your Stripe integration will be much more robust and reliable, handling edge cases gracefully while providing visibility into the payment lifecycle.

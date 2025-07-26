@@ -15,9 +15,22 @@ import { useToast } from "../hooks/use-toast";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLIC_KEY 
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+console.log('🔑 Frontend: Checking Stripe configuration...');
+console.log('📋 STRIPE_PUBLISHABLE_KEY available:', !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+console.log('📋 Legacy VITE_STRIPE_PUBLIC_KEY available:', !!import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+console.log('🔑 Using Stripe key:', stripePublishableKey ? `${stripePublishableKey.substring(0, 7)}...${stripePublishableKey.slice(-4)}` : 'NOT FOUND');
+
+const stripePromise = stripePublishableKey 
+  ? loadStripe(stripePublishableKey)
   : null;
+
+if (stripePromise) {
+  console.log('✅ Stripe frontend initialized successfully');
+} else {
+  console.error('❌ Stripe frontend initialization failed - no publishable key found');
+}
 
 const CheckoutForm = ({ offer, onSuccess }) => {
   const stripe = useStripe();
@@ -26,13 +39,22 @@ const CheckoutForm = ({ offer, onSuccess }) => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmit = async (e) => {
+    console.log('🎯 FRONTEND STEP 1: Payment form submitted');
     e.preventDefault();
 
     if (!stripe || !elements) {
+      console.error('❌ FRONTEND STEP 1 FAILED: Stripe or Elements not available');
+      toast({
+        title: "Payment System Error",
+        description: "Payment system not properly loaded. Please refresh the page.",
+        variant: "destructive",
+      });
       return;
     }
+    console.log('✅ FRONTEND STEP 1 PASSED: Stripe and Elements ready');
 
     setIsProcessing(true);
+    console.log('🎯 FRONTEND STEP 2: Starting payment confirmation with Stripe');
 
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
@@ -43,17 +65,34 @@ const CheckoutForm = ({ offer, onSuccess }) => {
         redirect: "if_required",
       });
 
+      console.log('📋 FRONTEND STEP 3: Stripe payment confirmation result:', {
+        error: error ? error.message : 'None',
+        paymentIntentStatus: paymentIntent?.status,
+        paymentIntentId: paymentIntent?.id
+      });
+
       if (error) {
+        console.error('❌ FRONTEND STEP 3 FAILED: Stripe payment error:', error);
         toast({
           title: "Payment Failed",
           description: error.message,
           variant: "destructive",
         });
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
+        console.log('✅ FRONTEND STEP 3 PASSED: Payment succeeded');
+        console.log('🎯 FRONTEND STEP 4: Calling backend to confirm payment');
         // Payment succeeded, update the offer status
         onSuccess(paymentIntent.id);
+      } else {
+        console.error('❌ FRONTEND STEP 3 FAILED: Unexpected payment state:', paymentIntent?.status);
+        toast({
+          title: "Payment Status Unknown",
+          description: "Payment status could not be confirmed. Please contact support.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
+      console.error('❌ FRONTEND STEP 2/3 FAILED: Exception during payment:', error);
       toast({
         title: "Payment Error",
         description: "An unexpected error occurred during payment processing.",
@@ -61,6 +100,7 @@ const CheckoutForm = ({ offer, onSuccess }) => {
       });
     } finally {
       setIsProcessing(false);
+      console.log('🔄 FRONTEND: Payment processing completed, form unlocked');
     }
   };
 
@@ -137,13 +177,19 @@ export default function Payment() {
   // Create payment intent mutation
   const createPaymentIntentMutation = useMutation({
     mutationFn: async (data) => {
+      console.log('🎯 FRONTEND API: Creating payment intent with data:', data);
       const response = await api.post('/api/payment/create-payment-intent', data);
+      console.log('✅ FRONTEND API: Payment intent response:', response.data);
       return response.data;
     },
     onSuccess: (data) => {
+      console.log('✅ FRONTEND: Payment intent created successfully');
+      console.log('🔑 Client secret received:', data.clientSecret ? 'YES' : 'NO');
       setClientSecret(data.clientSecret);
     },
     onError: (error) => {
+      console.error('❌ FRONTEND: Payment intent creation failed:', error);
+      console.error('Backend error details:', error.response?.data);
       toast({
         title: "Payment Setup Failed",
         description: error.response?.data?.error || "Failed to initialize payment",
@@ -155,10 +201,13 @@ export default function Payment() {
   // Confirm payment mutation
   const confirmPaymentMutation = useMutation({
     mutationFn: async (data) => {
+      console.log('🎯 FRONTEND API: Confirming payment with data:', data);
       const response = await api.post('/api/payment/confirm-payment', data);
+      console.log('✅ FRONTEND API: Payment confirmation response:', response.data);
       return response.data;
     },
     onSuccess: () => {
+      console.log('✅ FRONTEND: Payment confirmed successfully');
       setPaymentSuccess(true);
       toast({
         title: "Payment Successful",
@@ -166,6 +215,8 @@ export default function Payment() {
       });
     },
     onError: (error) => {
+      console.error('❌ FRONTEND: Payment confirmation failed:', error);
+      console.error('Backend error details:', error.response?.data);
       toast({
         title: "Payment Confirmation Failed",
         description: error.response?.data?.error || "Failed to confirm payment",
@@ -176,6 +227,13 @@ export default function Payment() {
 
   useEffect(() => {
     if (offer && offer.status === 'accepted' && !clientSecret) {
+      console.log('🚀 FRONTEND: Initializing payment for accepted offer');
+      console.log('📋 Offer details:', {
+        id: offer._id,
+        amount: offer.offeredAmount,
+        status: offer.status,
+        property: offer.propertyTitle
+      });
       createPaymentIntentMutation.mutate({
         amount: offer.offeredAmount,
         offerId: offer._id
@@ -184,6 +242,11 @@ export default function Payment() {
   }, [offer, clientSecret]);
 
   const handlePaymentSuccess = (paymentIntentId) => {
+    console.log('🎉 FRONTEND: Payment succeeded, confirming with backend');
+    console.log('📋 Payment details:', {
+      paymentIntentId,
+      offerId: offer._id
+    });
     confirmPaymentMutation.mutate({
       paymentIntentId,
       offerId: offer._id
