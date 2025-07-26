@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { signInWithEmail, signInWithGoogle } from "../lib/firebase";
-import { useToast } from "@/hooks/use-toast";
+import Swal from "sweetalert2";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
@@ -14,7 +14,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -31,9 +30,12 @@ export default function Login() {
       console.log("👤 Step 5: User data synced with backend");
       console.log("🎯 Step 6: Redirecting to role-based dashboard");
       
-      toast({
-        title: "Welcome back!",
-        description: "You have been successfully logged in.",
+      Swal.fire({
+        title: 'Welcome back!',
+        text: 'You have been successfully logged in',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
       navigate("/dashboard");
     } catch (error) {
@@ -47,10 +49,10 @@ export default function Login() {
         errorMessage = "Invalid email address format.";
       }
       
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
+      Swal.fire({
+        title: 'Login Failed',
+        text: errorMessage,
+        icon: 'error'
       });
     } finally {
       setLoading(false);
@@ -74,9 +76,12 @@ export default function Login() {
         console.log("👤 Step 6: User profile created/updated");
         console.log("🎯 Step 7: Redirecting to dashboard");
         
-        toast({
-          title: "Welcome!",
-          description: "You have been successfully logged in with Google.",
+        Swal.fire({
+          title: 'Welcome!',
+          text: 'You have been successfully logged in with Google',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
         });
         navigate("/dashboard");
       }
@@ -91,19 +96,19 @@ export default function Login() {
       } else if (error.code === "auth/unauthorized-domain") {
         // For unauthorized domain, we can still proceed with basic auth
         console.log("Domain authorization issue, but authentication might still work");
-        toast({
-          title: "Domain Authorization Notice",
-          description: "Please add this domain to your Firebase authorized domains if you encounter issues.",
-          variant: "default",
+        Swal.fire({
+          title: 'Domain Authorization Notice',
+          text: 'Please add this domain to your Firebase authorized domains if you encounter issues.',
+          icon: 'info'
         });
         // Don't block the user completely
         return;
       }
       
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
+      Swal.fire({
+        title: 'Login Failed',
+        text: errorMessage,
+        icon: 'error'
       });
     } finally {
       setLoading(false);

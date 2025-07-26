@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { signUpWithEmail, signInWithGoogle, updateUserProfile } from "../lib/firebase";
-import { useToast } from "@/hooks/use-toast";
+import Swal from "sweetalert2";
 import { Mail, Lock, Eye, EyeOff, User, UserCheck } from "lucide-react";
 
 export default function Register() {
@@ -19,7 +19,6 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   const validatePassword = (password) => {
     const errors = [];
@@ -46,10 +45,10 @@ export default function Register() {
     // Validate password
     const passwordErrors = validatePassword(formData.password);
     if (passwordErrors.length > 0) {
-      toast({
-        title: "Password Requirements",
-        description: passwordErrors.join(". "),
-        variant: "destructive",
+      Swal.fire({
+        title: 'Password Requirements',
+        text: passwordErrors.join(". "),
+        icon: 'warning'
       });
       setLoading(false);
       return;
@@ -68,9 +67,12 @@ export default function Register() {
       console.log("💾 Step 6: User data saved to MongoDB");
       console.log("🎯 Step 7: Redirecting to dashboard");
       
-      toast({
-        title: "Account Created!",
-        description: "Your account has been successfully created.",
+      Swal.fire({
+        title: 'Account Created!',
+        text: 'Your account has been successfully created',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
       
       navigate("/dashboard");
@@ -85,10 +87,10 @@ export default function Register() {
         errorMessage = "Password is too weak. Please choose a stronger password.";
       }
       
-      toast({
-        title: "Registration Failed",
-        description: errorMessage,
-        variant: "destructive",
+      Swal.fire({
+        title: 'Registration Failed',
+        text: errorMessage,
+        icon: 'error'
       });
     } finally {
       setLoading(false);
@@ -111,9 +113,12 @@ export default function Register() {
       console.log("💾 Step 6: User account created in MongoDB");
       console.log("🎯 Step 7: Redirecting to dashboard");
       
-      toast({
-        title: "Welcome!",
-        description: "Your account has been successfully created with Google.",
+      Swal.fire({
+        title: 'Welcome!',
+        text: 'Your account has been successfully created with Google',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
       navigate("/dashboard");
     } catch (error) {
@@ -128,10 +133,10 @@ export default function Register() {
         errorMessage = "This domain is not authorized for Google sign-in.";
       }
       
-      toast({
-        title: "Registration Failed",
-        description: errorMessage,
-        variant: "destructive",
+      Swal.fire({
+        title: 'Registration Failed',
+        text: errorMessage,
+        icon: 'error'
       });
     } finally {
       setLoading(false);

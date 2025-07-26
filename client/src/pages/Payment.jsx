@@ -11,7 +11,7 @@ import { Badge } from "../components/ui/badge";
 import { Separator } from "../components/ui/separator";
 import { ArrowLeft, CreditCard, MapPin, User, CheckCircle, AlertCircle, DollarSign, Calendar } from "lucide-react";
 import api from "../lib/api";
-import { useToast } from "../hooks/use-toast";
+import Swal from "sweetalert2";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
@@ -35,7 +35,6 @@ if (stripePromise) {
 const CheckoutForm = ({ offer, onSuccess }) => {
   const stripe = useStripe();
   const elements = useElements();
-  const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -44,10 +43,10 @@ const CheckoutForm = ({ offer, onSuccess }) => {
 
     if (!stripe || !elements) {
       console.error('❌ FRONTEND STEP 1 FAILED: Stripe or Elements not available');
-      toast({
-        title: "Payment System Error",
-        description: "Payment system not properly loaded. Please refresh the page.",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Payment System Error',
+        text: 'Payment system not properly loaded. Please refresh the page.',
+        icon: 'error'
       });
       return;
     }
@@ -73,10 +72,10 @@ const CheckoutForm = ({ offer, onSuccess }) => {
 
       if (error) {
         console.error('❌ FRONTEND STEP 3 FAILED: Stripe payment error:', error);
-        toast({
-          title: "Payment Failed",
-          description: error.message,
-          variant: "destructive",
+        Swal.fire({
+          title: 'Payment Failed',
+          text: error.message,
+          icon: 'error'
         });
       } else if (paymentIntent && paymentIntent.status === "succeeded") {
         console.log('✅ FRONTEND STEP 3 PASSED: Payment succeeded');
@@ -85,18 +84,18 @@ const CheckoutForm = ({ offer, onSuccess }) => {
         onSuccess(paymentIntent.id);
       } else {
         console.error('❌ FRONTEND STEP 3 FAILED: Unexpected payment state:', paymentIntent?.status);
-        toast({
-          title: "Payment Status Unknown",
-          description: "Payment status could not be confirmed. Please contact support.",
-          variant: "destructive",
+        Swal.fire({
+          title: 'Payment Status Unknown',
+          text: 'Payment status could not be confirmed. Please contact support.',
+          icon: 'warning'
         });
       }
     } catch (error) {
       console.error('❌ FRONTEND STEP 2/3 FAILED: Exception during payment:', error);
-      toast({
-        title: "Payment Error",
-        description: "An unexpected error occurred during payment processing.",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Payment Error',
+        text: 'An unexpected error occurred during payment processing.',
+        icon: 'error'
       });
     } finally {
       setIsProcessing(false);
@@ -133,7 +132,6 @@ const CheckoutForm = ({ offer, onSuccess }) => {
 export default function Payment() {
   const { offerId } = useParams();
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const [clientSecret, setClientSecret] = useState("");
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -190,10 +188,10 @@ export default function Payment() {
     onError: (error) => {
       console.error('❌ FRONTEND: Payment intent creation failed:', error);
       console.error('Backend error details:', error.response?.data);
-      toast({
-        title: "Payment Setup Failed",
-        description: error.response?.data?.error || "Failed to initialize payment",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Payment Setup Failed',
+        text: error.response?.data?.error || "Failed to initialize payment",
+        icon: 'error'
       });
     }
   });
@@ -209,18 +207,21 @@ export default function Payment() {
     onSuccess: () => {
       console.log('✅ FRONTEND: Payment confirmed successfully');
       setPaymentSuccess(true);
-      toast({
-        title: "Payment Successful",
-        description: "Your property purchase has been completed!",
+      Swal.fire({
+        title: 'Payment Successful!',
+        text: 'Your property purchase has been completed',
+        icon: 'success',
+        timer: 3000,
+        showConfirmButton: false
       });
     },
     onError: (error) => {
       console.error('❌ FRONTEND: Payment confirmation failed:', error);
       console.error('Backend error details:', error.response?.data);
-      toast({
-        title: "Payment Confirmation Failed",
-        description: error.response?.data?.error || "Failed to confirm payment",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Payment Confirmation Failed',
+        text: error.response?.data?.error || "Failed to confirm payment",
+        icon: 'error'
       });
     }
   });

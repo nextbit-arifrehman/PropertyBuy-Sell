@@ -6,14 +6,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MapPin, Heart, ArrowRight, Check, Clock } from "lucide-react";
 import { useState } from "react";
 import api from "../lib/api";
-import { toast } from "../hooks/use-toast";
+import Swal from "sweetalert2";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function PropertyCard({ property, onAddToWishlist, showWishlistButton = true }) {
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const { user } = useAuth();
 
   const handleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Check if user is logged in
+    if (!user) {
+      Swal.fire({
+        title: 'Login Required',
+        text: 'Please log in to add properties to your wishlist',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3b82f6',
+        confirmButtonText: 'Login Now',
+        cancelButtonText: 'Cancel'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          window.location.href = '/login';
+        }
+      });
+      return;
+    }
     
     try {
       if (isWishlisted) {
@@ -26,9 +46,12 @@ export default function PropertyCard({ property, onAddToWishlist, showWishlistBu
         });
         
         setIsWishlisted(true);
-        toast({
-          title: "Added to Wishlist",
-          description: "Property has been added to your wishlist",
+        Swal.fire({
+          title: 'Added to Wishlist!',
+          text: 'Property has been added to your wishlist',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
         });
         
         if (onAddToWishlist) {
@@ -37,11 +60,27 @@ export default function PropertyCard({ property, onAddToWishlist, showWishlistBu
       }
     } catch (error) {
       console.error('Wishlist error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to add property to wishlist",
-        variant: "destructive",
-      });
+      if (error.response?.status === 401) {
+        Swal.fire({
+          title: 'Login Required',
+          text: 'Please log in to add properties to your wishlist',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3b82f6',
+          confirmButtonText: 'Login Now',
+          cancelButtonText: 'Cancel'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.href = '/login';
+          }
+        });
+      } else {
+        Swal.fire({
+          title: 'Error',
+          text: 'Failed to add property to wishlist',
+          icon: 'error'
+        });
+      }
     }
   };
 

@@ -5,7 +5,7 @@ import { Badge } from '../../components/ui/badge';
 import { Switch } from '../../components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../../components/ui/alert-dialog';
 import { MapPin, DollarSign, User, Star, Eye, TrendingUp } from 'lucide-react';
-import { toast } from '../../hooks/use-toast';
+import Swal from 'sweetalert2';
 import api from '../../lib/api';
 
 const AdvertiseProperty = () => {
@@ -23,10 +23,10 @@ const AdvertiseProperty = () => {
       setProperties(response.data);
     } catch (error) {
       console.error('Error fetching verified properties:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load verified properties",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to load verified properties',
+        icon: 'error'
       });
     } finally {
       setLoading(false);
@@ -48,16 +48,19 @@ const AdvertiseProperty = () => {
           : property
       ));
       
-      toast({
-        title: "Success",
-        description: `Property ${newStatus ? 'added to' : 'removed from'} advertisements`,
+      Swal.fire({
+        title: 'Success',
+        text: `Property ${newStatus ? 'added to' : 'removed from'} advertisements`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
     } catch (error) {
       console.error('Error toggling advertisement:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update advertisement status",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Error',
+        text: 'Failed to update advertisement status',
+        icon: 'error'
       });
     } finally {
       setProcessingId(null);

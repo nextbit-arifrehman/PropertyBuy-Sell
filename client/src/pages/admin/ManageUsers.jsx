@@ -8,11 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Users, Search, Shield, UserCheck, AlertTriangle, Trash2, Crown, UserPlus } from "lucide-react";
 import apiClient from "../../lib/api";
-import { useToast } from "@/hooks/use-toast";
+import Swal from "sweetalert2";
 import { useState } from "react";
 
 export default function ManageUsers() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
@@ -41,17 +40,20 @@ export default function ManageUsers() {
       return response.data;
     },
     onSuccess: (data, variables) => {
-      toast({
-        title: "Role Updated",
-        description: `User role has been updated to ${variables.role}.`,
+      Swal.fire({
+        title: 'Role Updated',
+        text: `User role has been updated to ${variables.role}`,
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to update user role.",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.error || "Failed to update user role",
+        icon: 'error'
       });
     }
   });
@@ -63,17 +65,20 @@ export default function ManageUsers() {
       return response.data;
     },
     onSuccess: () => {
-      toast({
-        title: "User Marked as Fraud",
-        description: "User has been marked as fraudulent. Their properties have been removed from listings.",
+      Swal.fire({
+        title: 'User Marked as Fraud',
+        text: 'User has been marked as fraudulent. Their properties have been removed from listings.',
+        icon: 'warning',
+        timer: 3000,
+        showConfirmButton: false
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to mark user as fraud.",
-        variant: "destructive",
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.error || "Failed to mark user as fraud",
+        icon: 'error'
       });
     }
   });
@@ -85,9 +90,12 @@ export default function ManageUsers() {
       return response.data;
     },
     onSuccess: () => {
-      toast({
-        title: "User Deleted",
-        description: "User has been successfully deleted from the platform.",
+      Swal.fire({
+        title: 'User Deleted',
+        text: 'User has been successfully deleted from the platform',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false
       });
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -103,30 +111,63 @@ export default function ManageUsers() {
         errorMessage = error.message;
       }
       
-      toast({
-        title: "Delete Failed",
-        description: errorMessage,
-        variant: "destructive",
+      Swal.fire({
+        title: 'Delete Failed',
+        text: errorMessage,
+        icon: 'error'
       });
     }
   });
 
   const handleUpdateRole = (userId, role) => {
-    if (window.confirm(`Are you sure you want to make this user a ${role}?`)) {
-      updateRoleMutation.mutate({ userId, role });
-    }
+    Swal.fire({
+      title: 'Are you sure?',
+      text: `Do you want to make this user a ${role}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, update role',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        updateRoleMutation.mutate({ userId, role });
+      }
+    });
   };
 
   const handleMarkFraud = (userId) => {
-    if (window.confirm("Are you sure you want to mark this agent as fraudulent? This action will remove all their properties from listings.")) {
-      markFraudMutation.mutate(userId);
-    }
+    Swal.fire({
+      title: 'Mark as Fraudulent?',
+      text: 'This action will remove all their properties from listings and cannot be undone.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, mark as fraud',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        markFraudMutation.mutate(userId);
+      }
+    });
   };
 
   const handleDeleteUser = (userId) => {
-    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
-      deleteUserMutation.mutate(userId);
-    }
+    Swal.fire({
+      title: 'Delete User?',
+      text: 'This action cannot be undone and will permanently remove the user.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, delete user',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteUserMutation.mutate(userId);
+      }
+    });
   };
 
   const getRoleBadge = (role, isFraud = false) => {

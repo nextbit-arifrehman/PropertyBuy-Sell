@@ -12,28 +12,43 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Home, Building, LayoutDashboard, LogOut } from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import Swal from "sweetalert2";
 
 export default function Navbar() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const { toast } = useToast();
 
   const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/");
-      toast({
-        title: "Logged out successfully",
-        description: "You have been logged out of your account.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to log out. Please try again.",
-        variant: "destructive",
-      });
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'Do you want to log out of your account?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Yes, log out',
+      cancelButtonText: 'Cancel'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await logout();
+        navigate("/");
+        Swal.fire({
+          title: 'Logged Out!',
+          text: 'You have been successfully logged out',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } catch (error) {
+        Swal.fire({
+          title: 'Error',
+          text: 'Failed to log out. Please try again.',
+          icon: 'error'
+        });
+      }
     }
   };
 
