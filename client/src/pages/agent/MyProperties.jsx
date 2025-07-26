@@ -285,7 +285,7 @@ export default function MyProperties() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {properties.map((property) => (
-              <Card key={property.id} className="group overflow-hidden hover:shadow-xl transition-all duration-300">
+              <Card key={property.id || property._id?.toString() || Math.random()} className="group overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className="relative">
                   <img 
                     src={property.images?.[0] || "https://images.unsplash.com/photo-1568605114967-8130f3a36994?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=600"} 

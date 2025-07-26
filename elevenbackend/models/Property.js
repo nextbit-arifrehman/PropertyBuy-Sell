@@ -5,11 +5,21 @@ const COLLECTION_NAME = 'properties';
 const Property = {
   create: async (db, propertyData) => {
     const result = await db.collection(COLLECTION_NAME).insertOne(propertyData);
-    return db.collection(COLLECTION_NAME).findOne({ _id: result.insertedId });
+    const property = await db.collection(COLLECTION_NAME).findOne({ _id: result.insertedId });
+    // Add id field for frontend compatibility
+    if (property) {
+      property.id = property._id.toString();
+    }
+    return property;
   },
 
   getAllProperties: async (db, filter, sortOptions) => {
-    return db.collection(COLLECTION_NAME).find(filter).sort(sortOptions).toArray();
+    const properties = await db.collection(COLLECTION_NAME).find(filter).sort(sortOptions).toArray();
+    // Add id field for frontend compatibility
+    return properties.map(property => ({
+      ...property,
+      id: property._id.toString()
+    }));
   },
 
   getPropertyById: async (db, id) => {
@@ -19,6 +29,11 @@ const Property = {
     // If not found and id looks like ObjectId, try ObjectId format
     if (!property && ObjectId.isValid(id)) {
       property = await db.collection(COLLECTION_NAME).findOne({ _id: new ObjectId(id) });
+    }
+    
+    // Add id field for frontend compatibility
+    if (property) {
+      property.id = property._id.toString();
     }
     
     return property;
@@ -91,34 +106,54 @@ const Property = {
   },
 
   getAdvertisedProperties: async (db) => {
-    return db.collection(COLLECTION_NAME).find({ 
+    const properties = await db.collection(COLLECTION_NAME).find({ 
       isAdvertised: true, 
       verificationStatus: 'verified',
       status: { $ne: 'sold' }
     }).toArray();
+    // Add id field for frontend compatibility
+    return properties.map(property => ({
+      ...property,
+      id: property._id.toString()
+    }));
   },
 
   getLatestAdvertisedProperties: async (db, limit) => {
-    return db.collection(COLLECTION_NAME).find({ 
+    const properties = await db.collection(COLLECTION_NAME).find({ 
       isAdvertised: true, 
       verificationStatus: 'verified',
       status: { $ne: 'sold' }
     }).sort({ createdAt: -1 }).limit(limit).toArray();
+    // Add id field for frontend compatibility
+    return properties.map(property => ({
+      ...property,
+      id: property._id.toString()
+    }));
   },
 
   searchPropertiesByLocation: async (db, location) => {
-    return db.collection(COLLECTION_NAME).find({ 
+    const properties = await db.collection(COLLECTION_NAME).find({ 
       location: { $regex: location, $options: 'i' }, 
       verificationStatus: 'verified',
       status: { $ne: 'sold' }
     }).toArray();
+    // Add id field for frontend compatibility
+    return properties.map(property => ({
+      ...property,
+      id: property._id.toString()
+    }));
   },
 
   sortPropertiesByPrice: async (db, order) => {
-    return db.collection(COLLECTION_NAME).find({ 
+    const properties = await db.collection(COLLECTION_NAME).find({ 
       verificationStatus: 'verified',
       status: { $ne: 'sold' }
     }).sort({ 'priceRange.min': order }).toArray();
+    // Add id field for frontend compatibility
+    return properties.map(property => ({
+      ...property,
+      id: property._id.toString()
+    }));
   },
 };
 
