@@ -132,7 +132,7 @@ export default function RequestedProperties() {
     });
   };
 
-  // Group offers by property
+  // Group offers by property and sort them (accepted first, then pending, then others)
   const offersByProperty = offers.reduce((acc, offer) => {
     const propertyId = offer.propertyId;
     if (!acc[propertyId]) {
@@ -146,15 +146,27 @@ export default function RequestedProperties() {
     return acc;
   }, {});
 
+  // Sort offers within each property: accepted first, then pending, then others
+  Object.keys(offersByProperty).forEach(propertyId => {
+    offersByProperty[propertyId].offers.sort((a, b) => {
+      const statusOrder = { "accepted": 0, "pending": 1, "bought": 2, "rejected": 3 };
+      return (statusOrder[a.status] || 4) - (statusOrder[b.status] || 4);
+    });
+  });
+
   // Calculate statistics
   const pendingOffers = offers.filter(offer => offer.status === "pending");
   const acceptedOffers = offers.filter(offer => offer.status === "accepted");
   const rejectedOffers = offers.filter(offer => offer.status === "rejected");
   const soldOffers = offers.filter(offer => offer.status === "bought");
   
-  const totalOffersValue = offers.reduce((sum, offer) => sum + offer.offeredAmount, 0);
-  const acceptedOffersValue = acceptedOffers.reduce((sum, offer) => sum + offer.offeredAmount, 0);
-  const pendingOffersValue = pendingOffers.reduce((sum, offer) => sum + offer.offeredAmount, 0);
+  const totalOffersValue = offers.reduce((sum, offer) => sum + (offer.offeredAmount || 0), 0);
+  const acceptedOffersValue = acceptedOffers.reduce((sum, offer) => sum + (offer.offeredAmount || 0), 0);
+  const pendingOffersValue = pendingOffers.reduce((sum, offer) => sum + (offer.offeredAmount || 0), 0);
+  
+  // Debug logging
+  console.log("Debug - Accepted offers:", acceptedOffers);
+  console.log("Debug - Accepted offers value:", acceptedOffersValue);
 
   if (error) {
     return (
@@ -353,8 +365,18 @@ export default function RequestedProperties() {
                                       Reject
                                     </Button>
                                   </div>
+                                ) : offer.status === "accepted" ? (
+                                  <Badge className="bg-green-100 text-green-800">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Awaiting Payment
+                                  </Badge>
+                                ) : offer.status === "bought" ? (
+                                  <Badge className="bg-blue-100 text-blue-800">
+                                    <CheckCircle className="w-3 h-3 mr-1" />
+                                    Completed
+                                  </Badge>
                                 ) : (
-                                  <span className="text-neutral-500">No actions available</span>
+                                  <span className="text-neutral-500">-</span>
                                 )}
                               </TableCell>
                             </TableRow>
