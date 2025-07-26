@@ -31,7 +31,13 @@ const Offer = {
   },
 
   getSoldOffersByAgentUid: async (db, agentUid) => {
-    return db.collection(COLLECTION_NAME).find({ agentUid, status: 'bought' }).toArray();
+    // Find sold offers by both agentUid and agentEmail for compatibility
+    return db.collection(COLLECTION_NAME).find({ 
+      $or: [
+        { agentUid: agentUid, status: 'bought' },
+        { propertyAgentUid: agentUid, status: 'bought' }
+      ]
+    }).toArray();
   },
 
   updateOfferStatus: async (db, id, status) => {
@@ -62,7 +68,12 @@ const Offer = {
 
   getTotalSoldAmountByAgentUid: async (db, agentUid) => {
     const result = await db.collection(COLLECTION_NAME).aggregate([
-      { $match: { agentUid, status: 'bought' } },
+      { $match: { 
+        $or: [
+          { agentUid: agentUid, status: 'bought' },
+          { propertyAgentUid: agentUid, status: 'bought' }
+        ]
+      }},
       { $group: { _id: null, totalSoldAmount: { $sum: '$offeredAmount' } } }
     ]).toArray();
     return result.length > 0 ? result[0].totalSoldAmount : 0;

@@ -119,8 +119,20 @@ exports.getRequestedOffers = async (req, res) => {
 exports.getSoldPropertiesByAgent = async (req, res) => {
   try {
     const agentUid = req.user.uid;
-    const soldOffers = await Offer.getSoldOffersByAgentUid(req.db, agentUid);
-
+    const agentEmail = req.user.email;
+    
+    console.log(`🔍 Getting sold properties for agent: ${agentEmail} (UID: ${agentUid})`);
+    
+    // Find sold offers by both agentUid and agentEmail for compatibility
+    const soldOffers = await req.db.collection('offers').find({ 
+      $or: [
+        { agentUid: agentUid, status: 'bought' },
+        { agentEmail: agentEmail, status: 'bought' },
+        { propertyAgentUid: agentUid, status: 'bought' }
+      ]
+    }).toArray();
+    
+    console.log(`✅ Found ${soldOffers.length} sold properties for agent: ${agentEmail}`);
     res.json(soldOffers);
   } catch (error) {
     console.error('Get sold properties by agent error:', error);
@@ -132,8 +144,25 @@ exports.getSoldPropertiesByAgent = async (req, res) => {
 exports.getTotalSoldAmountByAgent = async (req, res) => {
   try {
     const agentUid = req.user.uid;
-    const totalSoldAmount = await Offer.getTotalSoldAmountByAgentUid(req.db, agentUid);
-
+    const agentEmail = req.user.email;
+    
+    console.log(`🔍 Getting total sold amount for agent: ${agentEmail} (UID: ${agentUid})`);
+    
+    // Find total sold amount by both agentUid and agentEmail for compatibility
+    const result = await req.db.collection('offers').aggregate([
+      { $match: { 
+        $or: [
+          { agentUid: agentUid, status: 'bought' },
+          { agentEmail: agentEmail, status: 'bought' },
+          { propertyAgentUid: agentUid, status: 'bought' }
+        ]
+      }},
+      { $group: { _id: null, totalSoldAmount: { $sum: '$offeredAmount' } } }
+    ]).toArray();
+    
+    const totalSoldAmount = result.length > 0 ? result[0].totalSoldAmount : 0;
+    
+    console.log(`✅ Total sold amount for agent ${agentEmail}: $${totalSoldAmount}`);
     res.json({ totalSoldAmount });
   } catch (error) {
     console.error('Get total sold amount by agent error:', error);
