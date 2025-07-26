@@ -49,7 +49,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd elevenbackend && nodemon index.js"
+args = "cd elevenbackend && npx nodemon index.js"
 waitForPort = 5000
 
 [[workflows.workflow]]
