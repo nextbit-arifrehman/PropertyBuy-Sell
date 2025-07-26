@@ -201,6 +201,23 @@ exports.confirmPayment = async (req, res) => {
         soldTo: offer.buyerEmail
       });
       console.log(`🏠 Property ${offer.propertyId} marked as sold`);
+
+      // Automatically reject all other pending offers for this property since it's now sold
+      await Offer.updateManyOffers(
+        req.db,
+        { 
+          propertyId: offer.propertyId, 
+          _id: { $ne: offer._id }, 
+          status: 'pending' 
+        },
+        { $set: { status: 'rejected', rejectedReason: 'Property has been sold to another buyer' } }
+      );
+      console.log(`📧 Automatically rejected all other pending offers for sold property ${offer.propertyId}`);
+
+      // Remove sold property from all user wishlists automatically
+      const Wishlist = require('../models/Wishlist');
+      await req.db.collection('wishlists').deleteMany({ propertyId: offer.propertyId });
+      console.log(`🗑️ Automatically removed sold property ${offer.propertyId} from all user wishlists`);
     } catch (error) {
       console.error('Error updating property status after sale:', error);
       // Don't fail the payment confirmation if property update fails

@@ -33,14 +33,14 @@ exports.addToWishlist = async (req, res) => {
   }
 };
 
-// Get user's wishlist
+// Get user's wishlist (excluding sold properties)
 exports.getWishlist = async (req, res) => {
   try {
     const userId = req.user.uid;
 
     const wishlistedItems = await Wishlist.getWishlistByUserId(req.db, userId);
 
-    // Populate property details for each wishlisted item
+    // Populate property details for each wishlisted item and filter out sold properties
     const populatedWishlist = await Promise.all(wishlistedItems.map(async (item) => {
       const property = await Property.getPropertyById(req.db, item.propertyId);
       return { 
@@ -52,11 +52,17 @@ exports.getWishlist = async (req, res) => {
         priceRange: property?.priceRange,
         agentName: property?.agentName,
         agentEmail: property?.agentEmail,
-        propertyImage: property?.image
+        propertyImage: property?.image,
+        isSold: property?.status === 'sold'
       };
     }));
 
-    res.json(populatedWishlist);
+    // Filter out sold properties from wishlist
+    const availableWishlist = populatedWishlist.filter(item => 
+      item.propertyDetails && item.propertyDetails.status !== 'sold'
+    );
+
+    res.json(availableWishlist);
   } catch (error) {
     console.error('Get wishlist error:', error);
     res.status(500).json({ error: 'Server error' });

@@ -89,7 +89,7 @@ exports.getMyOffers = async (req, res) => {
   }
 };
 
-// Agent: get all offers made for agent's properties (requested/offered properties)
+// Agent: get all offers made for agent's properties (requested/offered properties) - excluding sold properties
 exports.getRequestedOffers = async (req, res) => {
   try {
     const agentUid = req.user.uid;
@@ -98,17 +98,42 @@ exports.getRequestedOffers = async (req, res) => {
     console.log(`🔍 Getting requested offers for agent: ${agentEmail} (UID: ${agentUid})`);
     
     // Get offers by agent UID (for newer offers) and agent email (for compatibility)
-    const offersByUid = await Offer.getOffersByAgentUid(req.db, agentUid);
-    const offersByEmail = await req.db.collection('offers').find({ agentEmail: agentEmail }).toArray();
+    // Exclude offers for properties that are already sold
+    const offersByUid = await req.db.collection('offers').find({ 
+      agentUid: agentUid,
+      $and: [
+        { $or: [{ status: 'pending' }, { status: 'accepted' }, { status: 'rejected' }] },
+        { status: { $ne: 'bought' } } // Don't show bought offers in requested properties
+      ]
+    }).toArray();
+    
+    const offersByEmail = await req.db.collection('offers').find({ 
+      agentEmail: agentEmail,
+      $and: [
+        { $or: [{ status: 'pending' }, { status: 'accepted' }, { status: 'rejected' }] },
+        { status: { $ne: 'bought' } } // Don't show bought offers in requested properties
+      ]
+    }).toArray();
     
     // Combine and deduplicate offers
     const allOffers = [...offersByUid, ...offersByEmail];
     const uniqueOffers = allOffers.filter((offer, index, self) => 
       index === self.findIndex(o => o._id.toString() === offer._id.toString())
     );
+
+    // Further filter by checking if the associated property is not sold
+    const Property = require('../models/Property');
+    const activeOffers = await Promise.all(
+      uniqueOffers.map(async (offer) => {
+        const property = await Property.getPropertyById(req.db, offer.propertyId);
+        return property && property.status !== 'sold' ? offer : null;
+      })
+    );
+
+    const filteredOffers = activeOffers.filter(offer => offer !== null);
     
-    console.log(`✅ Found ${uniqueOffers.length} unique offers for agent: ${agentEmail}`);
-    res.json(uniqueOffers);
+    console.log(`✅ Found ${filteredOffers.length} active offers for unsold properties for agent: ${agentEmail}`);
+    res.json(filteredOffers);
   } catch (error) {
     console.error('Get requested offers error:', error);
     res.status(500).json({ error: 'Server error' });
@@ -242,6 +267,34 @@ exports.markOfferAsBought = async (req, res) => {
     res.json({ message: 'Payment completed, offer marked as bought', offer });
   } catch (error) {
     console.error('Mark offer paid error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// User: Get bought properties (for "Property Bought" dashboard page)
+exports.getUserBoughtProperties = async (req, res) => {
+  try {
+    const buyerUid = req.user.uid;
+    const buyerEmail = req.user.email;
+    
+    console.log(`🏠 Getting bought properties for user: ${buyerEmail} (UID: ${buyerUid})`);
+    
+    // Find all bought offers by this user
+    const boughtOffers = await req.db.collection('offers').find({ 
+      $or: [
+        { buyerUid: buyerUid, status: 'bought' },
+        { buyerEmail: buyerEmail, status: 'bought' }
+      ]
+    }).toArray();
+    
+    console.log(`✅ Found ${boughtOffers.length} bought properties for user: ${buyerEmail}`);
+    res.json({ 
+      properties: boughtOffers,
+      totalPurchases: boughtOffers.length,
+      totalSpent: boughtOffers.reduce((sum, offer) => sum + (offer.offeredAmount || 0), 0)
+    });
+  } catch (error) {
+    console.error('Get user bought properties error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };
